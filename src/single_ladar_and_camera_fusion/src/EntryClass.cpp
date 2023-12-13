@@ -197,15 +197,15 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
         //根据映射后的坐标,从当前摄像机的当前图像帧current_image_frame上获取颜色值,并保存对应的3D位置信息
         if ((col >= 0) && (col < image_frame_size.width) && (row >= 0) && (row < image_frame_size.height) ) {
             //生成的点云坐标,总是和雷达坐标在rviz中现实一前一后位置相反,暂不知原因,这里强制把x,y(分别乘-1)做个原点对陈旋转
-            // colored_3d_point.x = -cloud_msg->points[i].x;  //乘-1
-            // colored_3d_point.y = -cloud_msg->points[i].y; //乘-1
-            // colored_3d_point.z = cloud_msg->points[i].z;
+            colored_3d_point.x = -cloud_msg->points[i].x;  //乘-1
+            colored_3d_point.y = -cloud_msg->points[i].y; //乘-1
+            colored_3d_point.z = cloud_msg->points[i].z;
 
-            // cv::Vec3b rgb_pixel = current_image_frame.at<cv::Vec3b>(row, col);
-            // colored_3d_point.r = rgb_pixel[2] * 2;
-            // colored_3d_point.g = rgb_pixel[1] * 2;
-            // colored_3d_point.b = rgb_pixel[0] * 2;
-            // outColorPointCloud->points.push_back(colored_3d_point);
+            cv::Vec3b rgb_pixel = current_image_frame.at<cv::Vec3b>(row, col);
+            colored_3d_point.r = rgb_pixel[2] * 2;
+            colored_3d_point.g = rgb_pixel[1] * 2;
+            colored_3d_point.b = rgb_pixel[0] * 2;
+            outColorPointCloud->points.push_back(colored_3d_point);
         }
     }
     
