@@ -1,0 +1,27 @@
+<launch>
+<arg name="resolution" default="480p"/>
+
+<!-- 启动激光雷达驱动包 -->
+
+<include file="$(find rplidar_ros)/launch/rplidar_s1.launch" />
+
+<!-- <node pkg="laser_filters" type="scan_to_scan_filter_chain" output="log" name="laser_filter">
+		<rosparam command="load" file="$(find realsense2_camera)/config/result.yaml"/>
+		<remap from="/scan" to="/scan_raw"/>
+		<remap from="/scan_filtered" to="/scan"/>
+</node> -->
+
+
+<!-- 启动USB摄像头驱动包-->
+<include file="$(find usb_cam)/launch/usb_cam-test.launch"/>
+<!-- <include file="$(find usb_cam)/launch/usb_cam-test2.launch"/> -->
+
+		
+
+
+<node pkg="tf" type="static_transform_publisher" name="base_foot_print_to_laser" args="0.10 0 0.14 0 0 0 base_footprint laser 40"/>
+<!-- <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_camera" args="0.10 0 0.10 1.57 3.14 1.57 base_footprint camera_link 40"/> -->
+<node pkg="tf" type="static_transform_publisher" name="base_footprint_to_camera" args="0.10 0 0.10 0 0 0 base_footprint camera_link 40"/>
+
+ <node pkg="rviz" type="rviz" name="rviz" args="-d $(find single_ladar_and_camera_fusion)/config/lidar_jhf_rviz.rviz" /> 
+</launch>
