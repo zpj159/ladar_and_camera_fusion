@@ -1,0 +1,8 @@
+prefix=/home/zpj/ladar_and_camera_fusion/devel
+
+Name: incremental_calibration_python
+Description: Description of incremental_calibration_python
+Version: 0.0.1
+Cflags: -I/home/zpj/ladar_and_camera_fusion/src/Kalibr/aslam_incremental_calibration/incremental_calibration_python/include
+Libs: -L${prefix}/lib 
+Requires: 

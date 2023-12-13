@@ -1,0 +1,8 @@
+prefix=/home/zpj/ladar_and_camera_fusion/devel
+
+Name: aslam_backend_expressions
+Description: Description of aslam_backend_expressions
+Version: 0.0.1
+Cflags: -I/home/zpj/ladar_and_camera_fusion/src/Kalibr/aslam_optimizer/aslam_backend_expressions/include
+Libs: -L${prefix}/lib -laslam_backend_expressions
+Requires: sparse_block_matrix

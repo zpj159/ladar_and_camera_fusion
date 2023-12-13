@@ -1,0 +1,8 @@
+prefix=/home/zpj/ladar_and_camera_fusion/devel
+
+Name: kalibr
+Description: Description of kalibr
+Version: 0.0.1
+Cflags: -I/home/zpj/ladar_and_camera_fusion/src/Kalibr/aslam_offline_calibration/kalibr/include
+Libs: -L${prefix}/lib -lkalibr
+Requires: 

@@ -1,0 +1,8 @@
+prefix=/home/zpj/ladar_and_camera_fusion/devel
+
+Name: sparse_block_matrix
+Description: Description of sparse_block_matrix
+Version: 0.0.1
+Cflags: -I/home/zpj/ladar_and_camera_fusion/src/Kalibr/aslam_optimizer/sparse_block_matrix/include/
+Libs: -L${prefix}/lib -lsparse_block_matrix
+Requires: sm_common sm_eigen

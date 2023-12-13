@@ -1,0 +1,13 @@
+使用kalibr 对双目标定
+
+rosrun kalibr kalibr_calibrate_cameras --target /home/zpj/ladar_and_camera_fusion/bag/apriltags.yaml --bag  /home/zpj/ladar_and_camera_fusion/bag/cameras_calibration.bag --models omni-radtan omni-radtan --topics /fisheye1 /fisheye2
+
+
+rosrun kalibr basalt_calibrate --dataset-path /home/zpj/ladar_and_camera_fusion/bag/cameras_calibration.bag --dataset-type bag --aprilgrid /home/zpj/ladar_and_camera_fusion/bag/apriltags.json --result-path /home/zpj/ladar_and_camera_fusion/bag/ --cam-types ds ds ds ds
+
+录制bag
+rosbag record -O biaoding /scan /camera/fisheye1/image_raw
+降低图片接受频率
+rosrun topic_tools throttle messages /camera/fisheye1/image_raw 20.0 /camera/fisheye1/image_raw
+
+使用

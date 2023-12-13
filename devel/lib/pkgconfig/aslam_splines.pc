@@ -1,0 +1,8 @@
+prefix=/home/zpj/ladar_and_camera_fusion/devel
+
+Name: aslam_splines
+Description: Description of aslam_splines
+Version: 0.0.1
+Cflags: -I/home/zpj/ladar_and_camera_fusion/src/Kalibr/aslam_nonparametric_estimation/aslam_splines/include
+Libs: -L${prefix}/lib -laslam_splines
+Requires: bsplines

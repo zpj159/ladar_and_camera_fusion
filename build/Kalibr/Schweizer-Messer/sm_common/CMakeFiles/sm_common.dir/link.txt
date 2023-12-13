@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -Wall -D__STRICT_ANSI__ -O2 -g -DNDEBUG  -shared -Wl,-soname,libsm_common.so -o /home/zpj/ladar_and_camera_fusion/devel/lib/libsm_common.so CMakeFiles/sm_common.dir/src/progress_info.cpp.o -Wl,-rpath,/usr/local/lib: /usr/local/lib/libboost_system.so.1.80.0 

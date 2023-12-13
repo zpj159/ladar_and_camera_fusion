@@ -1,0 +1,8 @@
+prefix=/home/zpj/ladar_and_camera_fusion/devel
+
+Name: sm_timing
+Description: Description of sm_timing
+Version: 0.0.1
+Cflags: -I/home/zpj/ladar_and_camera_fusion/src/Kalibr/Schweizer-Messer/sm_timing/include -I/home/zpj/ladar_and_camera_fusion/src/Kalibr/Schweizer-Messer/sm_common/include -I/home/zpj/ladar_and_camera_fusion/src/Kalibr/Schweizer-Messer/sm_random/include -I/usr/local/include
+Libs: -L${prefix}/lib -lsm_timing
+Requires: sm_common sm_random

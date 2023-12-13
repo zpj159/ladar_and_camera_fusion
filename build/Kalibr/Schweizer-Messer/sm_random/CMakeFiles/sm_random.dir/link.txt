@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -O2 -g -DNDEBUG  -shared -Wl,-soname,libsm_random.so -o /home/zpj/ladar_and_camera_fusion/devel/lib/libsm_random.so CMakeFiles/sm_random.dir/src/random.cpp.o 

@@ -1,0 +1,8 @@
+prefix=/home/zpj/ladar_and_camera_fusion/devel
+
+Name: sm_opencv
+Description: Description of sm_opencv
+Version: 0.0.1
+Cflags: -I/home/zpj/ladar_and_camera_fusion/src/Kalibr/Schweizer-Messer/sm_opencv/include -I/home/zpj/ladar_and_camera_fusion/src/Kalibr/Schweizer-Messer/sm_common/include -I/usr/local/include
+Libs: -L${prefix}/lib /usr/local/lib/libboost_system.so.1.80.0
+Requires: sm_common

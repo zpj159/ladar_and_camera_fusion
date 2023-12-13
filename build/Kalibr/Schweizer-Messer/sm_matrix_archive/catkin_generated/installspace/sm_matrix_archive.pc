@@ -1,0 +1,8 @@
+prefix=/home/zpj/ladar_and_camera_fusion/install
+
+Name: sm_matrix_archive
+Description: Description of sm_matrix_archive
+Version: 0.0.1
+Cflags: -I${prefix}/include -I/home/zpj/ladar_and_camera_fusion/src/Kalibr/Schweizer-Messer/sm_common/include -I/usr/local/include
+Libs: -L${prefix}/lib -lsm_matrix_archive
+Requires: sm_common

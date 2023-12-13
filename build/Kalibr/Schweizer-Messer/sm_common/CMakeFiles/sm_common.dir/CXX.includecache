@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/zpj/ladar_and_camera_fusion/src/Kalibr/Schweizer-Messer/sm_common/include/sm/assert_macros.hpp
+stdexcept
+-
+sstream
+-
+typeinfo
+-
+source_file_pos.hpp
+/home/zpj/ladar_and_camera_fusion/src/Kalibr/Schweizer-Messer/sm_common/include/sm/source_file_pos.hpp
+
+/home/zpj/ladar_and_camera_fusion/src/Kalibr/Schweizer-Messer/sm_common/include/sm/progress_info.hpp
+cstddef
+-
+stdexcept
+-
+sm/assert_macros.hpp
+-
+
+/home/zpj/ladar_and_camera_fusion/src/Kalibr/Schweizer-Messer/sm_common/include/sm/source_file_pos.hpp
+string
+-
+iostream
+-
+sstream
+-
+
+/home/zpj/ladar_and_camera_fusion/src/Kalibr/Schweizer-Messer/sm_common/src/progress_info.cpp
+sm/progress_info.hpp
+-
+iostream
+-
+iomanip
+-
+
