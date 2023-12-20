@@ -279,7 +279,7 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
                                 float ratio = static_cast<float>(j) / num_interpolated_points;
                                 float x_interp = x_prev + ratio * (x - x_prev);
                                 float y_interp = y_prev + ratio * (y - y_prev);
-
+//djhfkhdghksfjkdhjkfhjkbdfjskbhjk
                              // 使用雷达测距信息进行z坐标插值
                                 float z_interp = (ratio * distance + (1 - ratio) * distance_prev) * sin(radian_prev);
 
