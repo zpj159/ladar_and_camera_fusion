@@ -9,8 +9,8 @@ using namespace tf;
 #define H_LIDAR_INTERPOLATION_IN_RADIAN  (0.00349)  //弧度
 #define H_LIDAR_INTERPOLATION_IN_RADIAN_3  (0.002)  //弧度
 #define V_LIDAR_INTERPOLATION  (true) //是否对雷达数据垂直方向插值
-#define V_UP_LIDAR_INTERPOLATION_IN_PIXEL  (2000)  //向上垂直插值个数
-#define V_DOWN_LIDAR_INTERPOLATION_IN_PIXEL  (600)  //向下垂直插值个数
+#define V_UP_LIDAR_INTERPOLATION_IN_PIXEL  (1000)  //向上垂直插值个数
+#define V_DOWN_LIDAR_INTERPOLATION_IN_PIXEL  (300)  //向下垂直插值个数
 #define H_LIDAR_INTERPOLATION_DISTANCE (0.00349)
 
 #define DEG2RAD(x) ((x)*M_PI/180.)
@@ -157,7 +157,8 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
     //插入上面69行
     for( int up = 1; up <= V_UP_LIDAR_INTERPOLATION_IN_PIXEL; up++ ){
         for(int i = 0; i < cloud_msg->points.size(); i++){
-            point_cloud->points.push_back(pcl::PointXYZ(cloud_msg->points[i].x, cloud_msg->points[i].y, 0));//这里z坐标应该为正数
+            point_cloud->points.push_back(pcl::PointXYZ(cloud_msg->points[i].x, cloud_msg->points[i].y, up/200.0));//这里z坐标应该为正数
+            // ROS_INFO("up/200=%f",up/200);
         }
     }
     //插入原始行
@@ -167,7 +168,7 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
     //插入下面20行
     for( int down = 1; down <= V_DOWN_LIDAR_INTERPOLATION_IN_PIXEL; down++ ){
         for(int i = 0; i < cloud_msg->points.size(); i++){
-            point_cloud->points.push_back(pcl::PointXYZ(cloud_msg->points[i].x, cloud_msg->points[i].y, 0));//这里z坐标开始为负数
+            point_cloud->points.push_back(pcl::PointXYZ(cloud_msg->points[i].x, cloud_msg->points[i].y, -down/200.0));//这里z坐标开始为负数
         }
     }
 
@@ -201,7 +202,7 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
         if ((col >= 0) && (col < image_frame_size.width) && (row >= 0) && (row < image_frame_size.height) ) {
             //生成的点云坐标,总是和雷达坐标在rviz中现实一前一后位置相反,暂不知原因,这里强制把x,y(分别乘-1)做个原点对陈旋转
             colored_3d_point.x = cloud_msg->points[i].x;  //乘-1
-            colored_3d_point.y = -cloud_msg->points[i].y; //乘-1
+            colored_3d_point.y = cloud_msg->points[i].y; //乘-1
             colored_3d_point.z = cloud_msg->points[i].z;
 
             cv::Vec3b rgb_pixel = current_image_frame.at<cv::Vec3b>(row, col);
@@ -256,54 +257,53 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
             float x = cos(radian) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值   cos（弧度）=余弦值
             float y = sin(radian) * distance;//cos（弧度）=正弦值
             //  ROS_INFO("radian=:%f,distance=:%f,x=:%f,y=:%f",radian,distance,x,y);
-            // cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
+            cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
        //---------------------------------------------------------------------------    
-           // 创建PointXYZ点
-             pcl::PointXYZ point(x, y, 0);
-            // 将点插入点云
-             cloud_msg->points.push_back(point);
-            //水平插值
-             if (i > 1) {
-                //  float step = H_LIDAR_INTERPOLATION_IN_RADIAN;
-                //  if( distance > 3.0f )
-                //      step = H_LIDAR_INTERPOLATION_IN_RADIAN_3;
-                //  if( lastLeftRadian >= 0 && (radian-lastLeftRadian) > step ){
-                        // for(float rad = lastLeftRadian; rad < radian; rad+= step){
-                            float distance_prev = laserScan_msg->ranges[i - 1];
-                            float radian_prev = laserScan_msg->angle_min + laserScan_msg->angle_increment * (i - 1);
-                            float x_prev = cos(radian_prev) * distance_prev;
-                            float y_prev = sin(radian_prev) * distance_prev;
+        //    // 创建PointXYZ点
+        //      pcl::PointXYZ point(x, y, 0);
+        //     // 将点插入点云
+        //      cloud_msg->points.push_back(point);
+        //     //水平插值
+        //      if (i > 0) {
+        //         //  float step = H_LIDAR_INTERPOLATION_IN_RADIAN;
+        //         //  if( distance > 3.0f )
+        //         //      step = H_LIDAR_INTERPOLATION_IN_RADIAN_3;
+        //         //  if( lastLeftRadian >= 0 && (radian-lastLeftRadian) > step ){
+        //                 // for(float rad = lastLeftRadian; rad < radian; rad+= step){
+        //                     float distance_prev = laserScan_msg->ranges[i - 1];
+        //                     float radian_prev = laserScan_msg->angle_min + laserScan_msg->angle_increment * (i - 1);
+        //                     float x_prev = cos(radian_prev) * distance_prev;
+        //                     float y_prev = sin(radian_prev) * distance_prev;
 
-                            int num_interpolated_points = static_cast<int>((distance + distance_prev) / H_LIDAR_INTERPOLATION_DISTANCE);
-                            for (int j = 1; j < num_interpolated_points; j++) {
-                                float ratio = static_cast<float>(j) / num_interpolated_points;
-                                float x_interp = x_prev + ratio * (x - x_prev);
-                                float y_interp = y_prev + ratio * (y - y_prev);
-//djhfkhdghksfjkdhjkfhjkbdfjskbhjk
-                             // 使用雷达测距信息进行z坐标插值
-                                float z_interp = (ratio * distance + (1 - ratio) * distance_prev) * sin(radian_prev);
+        //                     int num_interpolated_points = static_cast<int>((distance + distance_prev) / H_LIDAR_INTERPOLATION_DISTANCE);
+        //                     for (int j = 1; j < num_interpolated_points; j++) {
+        //                         float ratio = static_cast<float>(j) / num_interpolated_points;
+        //                         float x_interp = x_prev + ratio * (x - x_prev);
+        //                         float y_interp = y_prev + ratio * (y - y_prev);
+        //                      // 使用雷达测距信息进行z坐标插值
+        //                         float z_interp = (ratio * distance + (1 - ratio) * distance_prev) * sin(radian_prev);
 
-                                pcl::PointXYZ point_interp(x_interp, y_interp, z_interp);
-                                cloud_msg->points.push_back(point_interp);
-                            }
-                        // }
-                //  }
-             }
+        //                         pcl::PointXYZ point_interp(x_interp, y_interp, z_interp);
+        //                         cloud_msg->points.push_back(point_interp);
+        //                     }
+        //                 // }
+        //         //  }
+        //      }
         //----------------------------------------------------------------------------------------------------------------
-// #ifdef H_LIDAR_INTERPOLATION
-//             float step = H_LIDAR_INTERPOLATION_IN_RADIAN;
-//             if( distance > 3.0f )
-//                 step = H_LIDAR_INTERPOLATION_IN_RADIAN_3;
-//             if( lastLeftRadian >= 0 && (radian-lastLeftRadian) > step ){
-//                 for(float rad = lastLeftRadian; rad < radian; rad+= step){
-//                     float x2 = cos(rad) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值
-//                     float y2 = sin(rad) * distance;
-//                     cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
-//                 }
-//             }
+#ifdef H_LIDAR_INTERPOLATION
+            float step = H_LIDAR_INTERPOLATION_IN_RADIAN;
+            if( distance > 3.0f )
+                step = H_LIDAR_INTERPOLATION_IN_RADIAN_3;
+            if( lastLeftRadian >= 0 && (radian-lastLeftRadian) > step ){
+                for(float rad = lastLeftRadian; rad < radian; rad+= step){
+                    float x2 = cos(rad) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值
+                    float y2 = sin(rad) * distance;
+                    cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
+                }
+            }
             
-            // lastLeftRadian = radian;
-// #endif
+            lastLeftRadian = radian;
+#endif
         }
        
         //右前方雷达数据,倒序存放为[360,330]
@@ -311,49 +311,49 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
             //  ROS_INFO("degree=:%f",degree);
             float x = cos(radian) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值
             float y = sin(radian) * distance;
-             //pointVector.insert(pointVector.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
+             pointVector.insert(pointVector.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
     //---------------------------------------------------------------------------    --------------------------------------------------------------------------------------------👇
-           // 创建PointXYZ点
-            pcl::PointXYZ point(x, y, 0);
-            // 将点插入点云
-            pointVector.push_back(point);
-            //水平插值
-             if (i > 0) {
-                 if( lastRightRadian >= 0 && (radian-lastRightRadian) > H_LIDAR_INTERPOLATION_IN_RADIAN ){//检查当前激光点的角度与上一个已处理过的右前方激光点的角度之间的差异是否足够大，以满足进行插值的条件
-                        for(float rad = lastRightRadian; rad < radian; rad+= H_LIDAR_INTERPOLATION_IN_RADIAN){
-                            float distance_prev = laserScan_msg->ranges[i - 1];
-                            float radian_prev = laserScan_msg->angle_min + laserScan_msg->angle_increment * (i - 1);
-                            float x_prev = cos(radian_prev) * distance_prev;
-                            float y_prev = sin(radian_prev) * distance_prev;
+        //    // 创建PointXYZ点
+        //     pcl::PointXYZ point(x, y, 0);
+        //     // 将点插入点云
+        //     pointVector.push_back(point);
+        //     //水平插值
+        //      if (i > 0) {
+        //          if( lastRightRadian >= 0 && (radian-lastRightRadian) > H_LIDAR_INTERPOLATION_IN_RADIAN ){//检查当前激光点的角度与上一个已处理过的右前方激光点的角度之间的差异是否足够大，以满足进行插值的条件
+        //                 for(float rad = lastRightRadian; rad < radian; rad+= H_LIDAR_INTERPOLATION_IN_RADIAN){
+        //                     float distance_prev = laserScan_msg->ranges[i - 1];
+        //                     float radian_prev = laserScan_msg->angle_min + laserScan_msg->angle_increment * (i - 1);
+        //                     float x_prev = cos(radian_prev) * distance_prev;
+        //                     float y_prev = sin(radian_prev) * distance_prev;
 
-                            int num_interpolated_points = static_cast<int>((distance + distance_prev) / H_LIDAR_INTERPOLATION_DISTANCE);
-                            for (int j = 1; j < num_interpolated_points; j++) {
-                                float ratio = static_cast<float>(j) / num_interpolated_points;
-                                float x_interp = x_prev + ratio * (x - x_prev);
-                                float y_interp = y_prev + ratio * (y - y_prev);
+        //                     int num_interpolated_points = static_cast<int>((distance + distance_prev) / H_LIDAR_INTERPOLATION_DISTANCE);
+        //                     for (int j = 1; j < num_interpolated_points; j++) {
+        //                         float ratio = static_cast<float>(j) / num_interpolated_points;
+        //                         float x_interp = x_prev + ratio * (x - x_prev);
+        //                         float y_interp = y_prev + ratio * (y - y_prev);
 
-                                    // 使用雷达测距信息进行z坐标插值
-                                float z_interp = (ratio * distance + (1 - ratio) * distance_prev) * sin(radian_prev);
+        //                             // 使用雷达测距信息进行z坐标插值
+        //                         float z_interp = (ratio * distance + (1 - ratio) * distance_prev) * sin(radian_prev);
 
-                                pcl::PointXYZ point_interp(x_interp, y_interp, z_interp);
-                                pointVector.push_back(point_interp);
-                            }
-                        }
-                 }
-             }
+        //                         pcl::PointXYZ point_interp(x_interp, y_interp, z_interp);
+        //                         // pointVector.push_back(point_interp);
+        //                     }
+        //                 }
+        //          }
+        //      }
              //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------☝
             //水平插值
-// #ifdef H_LIDAR_INTERPOLATION
-//             if( lastRightRadian >= 0 && (radian-lastRightRadian) > H_LIDAR_INTERPOLATION_IN_RADIAN ){
-//                 for(float rad = lastRightRadian; rad < radian; rad+= H_LIDAR_INTERPOLATION_IN_RADIAN){
-//                     float x2 = cos(rad) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值
-//                     float y2 = sin(rad) * distance;
-//                     pointVector.insert(pointVector.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
-//                 }
-//             }
+#ifdef H_LIDAR_INTERPOLATION
+            if( lastRightRadian >= 0 && (radian-lastRightRadian) > H_LIDAR_INTERPOLATION_IN_RADIAN ){
+                for(float rad = lastRightRadian; rad < radian; rad+= H_LIDAR_INTERPOLATION_IN_RADIAN){
+                    float x2 = cos(rad) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值
+                    float y2 = sin(rad) * distance;
+                    pointVector.insert(pointVector.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
+                }
+            }
             
-//             lastRightRadian = radian;
-// #endif
+            lastRightRadian = radian;
+#endif
         }
     }
 
