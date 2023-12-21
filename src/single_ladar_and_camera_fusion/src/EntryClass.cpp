@@ -99,6 +99,7 @@ void EntryClass::cameraImageCallback(const sensor_msgs::Image::ConstPtr &image_m
     }
 
     cv_bridge::CvImagePtr cv_image = cv_bridge::toCvCopy(image_msg, "bgr8");
+    
     cv::Mat image = cv_image->image;
 
     //TODO: 图像去畸变, 使用相机内参和畸变系数可以图像去畸变
@@ -106,6 +107,11 @@ void EntryClass::cameraImageCallback(const sensor_msgs::Image::ConstPtr &image_m
         cv::undistort(image, current_image_frame, camera_intrinsic_value, distortion_coefficients);
     else
         current_image_frame = image;
+
+    // 旋转图像
+    // cv::Mat rotated_image;
+    // cv::rotate(current_image_frame, rotated_image, cv::ROTATE_90_CLOCKWISE);
+    // current_image_frame=rotated_image;
 
     //最近image frame 信息
     image_frame_id = image_msg->header.frame_id;
@@ -133,7 +139,7 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
     if ( !camera_lidar_tf_ok_ )
     {
         // 从tf树里面寻找变换关系
-        camera_lidar_tf = findTransform( laserScan_msg->header.frame_id,image_frame_id);
+        camera_lidar_tf = findTransform( image_frame_id,laserScan_msg->header.frame_id);
     }
 
     if( !camera_lidar_tf_ok_ ){
@@ -158,12 +164,16 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
     point_cloud->header.frame_id = laserScan_msg->header.frame_id;//"laser_link";
     point_cloud->height = V_UP_LIDAR_INTERPOLATION_IN_PIXEL + V_DOWN_LIDAR_INTERPOLATION_IN_PIXEL + 1;
     point_cloud->width = cloud_msg->width;
-
+    // ROS_INFO("PointCloud width: %u", point_cloud->width);
+    //  ROS_INFO("cloud_msg_size: %zu", cloud_msg->points.size());
     //插入上面69行
     for( int up = 1; up <= V_UP_LIDAR_INTERPOLATION_IN_PIXEL; up++ ){
         for(int i = 0; i < cloud_msg->points.size(); i++){
             point_cloud->points.push_back(pcl::PointXYZ(cloud_msg->points[i].x, cloud_msg->points[i].y, up/200.0));//这里z坐标应该为正数
-            // ROS_INFO("up/200=%f",up/200);
+            // ROS_INFO("up/200=%f",up/200.0);
+        //     for (const auto& point : point_cloud->points) {
+        // ROS_INFO("Point: (%f, %f, %f)", point.x, point.y, point.z); 
+    // }
         }
     }
     //插入原始行
@@ -208,7 +218,12 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
             //生成的点云坐标,总是和雷达坐标在rviz中现实一前一后位置相反,暂不知原因,这里强制把x,y(分别乘-1)做个原点对陈旋转
             colored_3d_point.x = cloud_msg->points[i].x;  //乘-1
             colored_3d_point.y = cloud_msg->points[i].y; //乘-1
-            colored_3d_point.z = -cloud_msg->points[i].z+5;
+            colored_3d_point.z = cloud_msg->points[i].z;
+
+             // 旋转图像
+            // cv::Mat rotated_image;
+            // cv::rotate(current_image_frame, rotated_image, cv::ROTATE_90_CLOCKWISE);
+            // current_image_frame=rotated_image;
 
             cv::Vec3b rgb_pixel = current_image_frame.at<cv::Vec3b>(row, col);
             colored_3d_point.r = rgb_pixel[2] * 2;
@@ -258,11 +273,13 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
 	*/
         //左前方雷达数据,倒序存放为[30,0]
 
-        if( degree >-45 and degree <= 0 ){
+        if( degree >0 and degree <= 45 ){
             float x = cos(radian) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值   cos（弧度）=余弦值
             float y = sin(radian) * distance;//cos（弧度）=正弦值
             //  ROS_INFO("radian=:%f,distance=:%f,x=:%f,y=:%f",radian,distance,x,y);
-            // cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
+            cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
+            //   pointVector.insert(pointVector.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
+
        //---------------------------------------------------------------------------    
         //    // 创建PointXYZ点
         //      pcl::PointXYZ point(x, y, 0);
@@ -279,7 +296,6 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
         //                     float radian_prev = laserScan_msg->angle_min + laserScan_msg->angle_increment * (i - 1);
         //                     float x_prev = cos(radian_prev) * distance_prev;
         //                     float y_prev = sin(radian_prev) * distance_prev;
-              pointVector.insert(pointVector.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
         //                     int num_interpolated_points = static_cast<int>((distance + distance_prev) / H_LIDAR_INTERPOLATION_DISTANCE);
         //                     for (int j = 1; j < num_interpolated_points; j++) {
         //                         float ratio = static_cast<float>(j) / num_interpolated_points;
@@ -303,8 +319,8 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
                 for(float rad = lastLeftRadian; rad < radian; rad+= step){
                     float x2 = cos(rad) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值
                     float y2 = sin(rad) * distance;
-                    //  cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
-                     pointVector.insert(pointVector.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
+                     cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
+                    //  pointVector.insert(pointVector.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
                 }
             }
             
@@ -313,12 +329,13 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
         }
        
         //右前方雷达数据,倒序存放为[360,330]
-        if( degree >= 0 && degree <= 45 ){
+        if( degree > -45 && degree <= 0 ){
             //  ROS_INFO("degree=:%f",degree);
             float x = cos(radian) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值
             float y = sin(radian) * distance;
-            //  pointVector.insert(pointVector.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
-             cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
+             pointVector.insert(pointVector.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
+            //  cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
+
     //---------------------------------------------------------------------------    --------------------------------------------------------------------------------------------👇
         //    // 创建PointXYZ点
         //     pcl::PointXYZ point(x, y, 0);
@@ -358,8 +375,8 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
                 for(float rad = lastRightRadian; rad < radian; rad+= step){
                     float x2 = cos(rad) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值
                     float y2 = sin(rad) * distance;
-                    // pointVector.insert(pointVector.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
-                    cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
+                    pointVector.insert(pointVector.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
+                    // cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
                 }
             }
             
@@ -387,12 +404,14 @@ tf::StampedTransform EntryClass::findTransform(const std::string &target_frame, 
         camera_lidar_tf_ok_ = true;
         ROS_INFO("FindTransform : camera-lidar-tf obtained");
         ROS_INFO("image_frame_id=%s,laser_frame_id=%s",target_frame.c_str(),source_frame.c_str());
+        //---------------------------------------------------------------------------------👇
         tf::Vector3 translation = transform.getOrigin();
          tf::Quaternion rotation = transform.getRotation();
 
             // 打印平移和旋转信息
             ROS_INFO("Translation: x=%f, y=%f, z=%f", translation.x(), translation.y(), translation.z());
             ROS_INFO("Rotation: x=%f, y=%f, z=%f, w=%f", rotation.x(), rotation.y(), rotation.z(), rotation.w());
+            //------------------------------------------------------------------------------☝
     }
     catch (tf::TransformException ex)
     {
