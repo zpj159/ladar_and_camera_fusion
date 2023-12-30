@@ -196,6 +196,7 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
     //ROS_INFO("laserScanCallback 垂直插值后: cloud_msg->width=%d,height=%d,size=%d",cloud_msg->width,cloud_msg->height,cloud_msg->points.size());
 
     // 存储处理后的点云
+    ROS_INFO("--------------------------------------------------------------------------------------------------------");
     pcl::PointXYZRGB colored_3d_point;
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr outColorPointCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -249,7 +250,7 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
 
     std::vector<pcl::PointXYZ>  pointVector; 
     float lastLeftRadian = -1;
-    float lastRightRadian = 0;
+    float lastRightRadian = -1;
     //range data [m] (Note: values < range_min or > range_max should be discarded)
     for(int i = 0; i < pointCount; i++)
     {   
@@ -271,9 +272,10 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
         雷达数据转换到和载体坐标系一致后,有效区域数据顺序为:[330,360]和[0,30],
 	为了和摄像头拍摄的像素平面X-Y坐标一致,需要重新排序为:[30,0] + [360,330]
 	*/
-        //左前方雷达数据,倒序存放为[30,0]
+        // 左前方雷达数据,倒序存放为[30,0]
 
         if( degree >0 and degree <= 45 ){
+        // ROS_INFO("transScanToPoints : laserScan_msg->ranges:  degree=%f,distance=%f",degree,distance);
             float x = cos(radian) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值   cos（弧度）=余弦值
             float y = sin(radian) * distance;//cos（弧度）=正弦值
             //  ROS_INFO("radian=:%f,distance=:%f,x=:%f,y=:%f",radian,distance,x,y);
@@ -328,11 +330,12 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
 #endif
         }
        
-        //右前方雷达数据,倒序存放为[360,330]
+//         //右前方雷达数据,倒序存放为[360,330]
         if( degree > -45 && degree <= 0 ){
             //  ROS_INFO("degree=:%f",degree);
             float x = cos(radian) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值
             float y = sin(radian) * distance;
+            //  cloud_msg->points.push_back(pcl::PointXYZ(x, y, 0));
              pointVector.insert(pointVector.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
             //  cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x, y, 0));//z坐标暂存变换后极坐标角度
 
@@ -371,14 +374,21 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
             float step = H_LIDAR_INTERPOLATION_IN_RADIAN;
             if( distance > 3.0f )
                 step = H_LIDAR_INTERPOLATION_IN_RADIAN_3;
-            if( lastRightRadian >= 0 && (radian-lastRightRadian) > step ){
+        // ROS_INFO("radian-lastRightRadian=%f,step=%f",radian-lastRightRadian,step);
+            if( lastRightRadian < 0 && (radian-lastRightRadian) > step ){
+                // ROS_INFO("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz");
+                // int q=0;
                 for(float rad = lastRightRadian; rad < radian; rad+= step){
                     float x2 = cos(rad) * distance; //已经做了坐标系变化同一位置,故直接计算x,y值
                     float y2 = sin(rad) * distance;
                     pointVector.insert(pointVector.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
+                    //   cloud_msg->points.push_back(pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
                     // cloud_msg->points.insert(cloud_msg->points.begin(),pcl::PointXYZ(x2, y2, 0));//z坐标暂存变换后极坐标角度
+                    // q++;
                 }
+                // ROS_INFO("次数=%d",q);
             }
+            
             
             lastRightRadian = radian;
 #endif
