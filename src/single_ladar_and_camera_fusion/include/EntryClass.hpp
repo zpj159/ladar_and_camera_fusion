@@ -43,12 +43,14 @@ private:
     ros::Subscriber laserScan_sub_;
     ros::Subscriber cameraImage_sub_;
     ros::Subscriber intrinsics_sub_;
+    ros::Publisher image_pub;
 
     ros::Publisher  fusion_cloud_pub_;
 
     cv::Mat current_image_frame;
     std::string image_frame_id;
     cv::Size image_frame_size;
+     std_msgs::Header header;
 
     cv::Mat camera_intrinsic_value;  //相机内参
     cv::Mat distortion_coefficients; //畸变系数

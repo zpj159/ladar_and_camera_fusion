@@ -29,13 +29,13 @@ EntryClass::EntryClass() :
     timer_ = nh_private.createTimer(ros::Duration(1.0 / max(freq, 1.0)), &EntryClass::mainLoop, this);
 
     fusion_cloud_pub_ = node_h.advertise<sensor_msgs::PointCloud2>("colored_point_cloud", 1);//融合点云
+     image_pub = node_h.advertise<sensor_msgs::Image>("camera/image", 1);//融合激光
     
     //订阅相机内参:
     // intrinsics_sub_ = node_h.subscribe("/camera/fisheye1/camera_info", 1, &EntryClass::intrinsicValueCallback, this);
     intrinsics_sub_ = node_h.subscribe("/camera/camera_info", 1, &EntryClass::intrinsicValueCallback, this);
     //订阅雷达内参:
-    laserScan_sub_ = node_h.subscribe("/scan", 1, &EntryClass::laserScanCallback, this);
-
+    laserScan_sub_ = node_h.subscribe<sensor_msgs::LaserScan>("/scan", 1, &EntryClass::laserScanCallback,this);
     // cameraImage_sub_ = node_h.subscribe("/camera/fisheye1/image_raw", 1, &EntryClass::cameraImageCallback, this);
     cameraImage_sub_ = node_h.subscribe("/camera/image_raw", 1, &EntryClass::cameraImageCallback, this);
 }
@@ -107,6 +107,7 @@ void EntryClass::cameraImageCallback(const sensor_msgs::Image::ConstPtr &image_m
         cv::undistort(image, current_image_frame, camera_intrinsic_value, distortion_coefficients);
     else
         current_image_frame = image;
+        header = image_msg->header;
 
     // 旋转图像
     // cv::Mat rotated_image;
@@ -227,7 +228,7 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
 
             
             // 在图像上绘制激光点的位置
-            cv::circle(current_image_frame, cv::Point(col, row), 2, cv::Scalar(0, 255, 0), -1);
+            cv::circle(current_image_frame, cv::Point(col, row), 2, cv::Scalar(0, 255, 0), 1);
             ROS_INFO("已完成当前点云绘制------------------------");
         
 
@@ -244,6 +245,10 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
             outColorPointCloud->points.push_back(colored_3d_point);
         }
     }
+    // sensor_msgs::Image out_image;
+    sensor_msgs::ImagePtr out_image = cv_bridge::CvImage(header, "bgr8", current_image_frame).toImageMsg();
+    //  ros::Publisher image_pub = node_h.advertise<sensor_msgs::Image>("image_with_laser", 1, true);
+    image_pub.publish(out_image);
     
     sensor_msgs::PointCloud2 out_colored_cloud_msg;
     pcl::toROSMsg(*outColorPointCloud, out_colored_cloud_msg);
