@@ -5,10 +5,10 @@ using namespace std;
 using namespace ros;
 using namespace tf;
 
-#define H_LIDAR_INTERPOLATION  (true) //是否对雷达数据水平方向插值
+#define H_LIDAR_INTERPOLATION  (false) //是否对雷达数据水平方向插值
 #define H_LIDAR_INTERPOLATION_IN_RADIAN  (0.00349)  //弧度
 #define H_LIDAR_INTERPOLATION_IN_RADIAN_3  (0.002)  //弧度
-#define V_LIDAR_INTERPOLATION  (true) //是否对雷达数据垂直方向插值
+#define V_LIDAR_INTERPOLATION  (false) //是否对雷达数据垂直方向插值
 #define V_UP_LIDAR_INTERPOLATION_IN_PIXEL  (1000)  //向上垂直插值个数
 #define V_DOWN_LIDAR_INTERPOLATION_IN_PIXEL  (300)  //向下垂直插值个数
 #define H_LIDAR_INTERPOLATION_DISTANCE (0.00349)
@@ -159,6 +159,8 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
     cloud_msg->width = cloud_msg->points.size();
 
 //    ROS_INFO("laserScanCallback 垂直插值前: cloud_msg->width=%d,height=%d,size=%d",cloud_msg->width,cloud_msg->height,cloud_msg->points.size());
+
+/*
 #ifdef V_LIDAR_INTERPOLATION
     pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud(new pcl::PointCloud<pcl::PointXYZ>);
     point_cloud->header.frame_id = laserScan_msg->header.frame_id;//"laser_link";
@@ -193,10 +195,12 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
     for(int i = 0; i < point_cloud->points.size(); i++) 
         cloud_msg->points.push_back(point_cloud->points[i]);
 #endif
+*/
+
     //ROS_INFO("laserScanCallback 垂直插值后: cloud_msg->width=%d,height=%d,size=%d",cloud_msg->width,cloud_msg->height,cloud_msg->points.size());
 
     // 存储处理后的点云
-    ROS_INFO("--------------------------------------------------------------------------------------------------------");
+    // ROS_INFO("--------------------------------------------------------------------------------------------------------");
     pcl::PointXYZRGB colored_3d_point;
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr outColorPointCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -221,15 +225,22 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
             colored_3d_point.y = cloud_msg->points[i].y; //乘-1
             colored_3d_point.z = cloud_msg->points[i].z;
 
+            
+            // 在图像上绘制激光点的位置
+            cv::circle(current_image_frame, cv::Point(col, row), 2, cv::Scalar(0, 255, 0), -1);
+            ROS_INFO("已完成当前点云绘制------------------------");
+        
+
              // 旋转图像
             // cv::Mat rotated_image;
             // cv::rotate(current_image_frame, rotated_image, cv::ROTATE_90_CLOCKWISE);
             // current_image_frame=rotated_image;
 
-            cv::Vec3b rgb_pixel = current_image_frame.at<cv::Vec3b>(row, col);
-            colored_3d_point.r = rgb_pixel[2] * 2;
-            colored_3d_point.g = rgb_pixel[1] * 2;
-            colored_3d_point.b = rgb_pixel[0] * 2;
+            //获取颜色信息
+            // cv::Vec3b rgb_pixel = current_image_frame.at<cv::Vec3b>(row, col);
+            // colored_3d_point.r = rgb_pixel[2] * 2;
+            // colored_3d_point.g = rgb_pixel[1] * 2;
+            // colored_3d_point.b = rgb_pixel[0] * 2;
             outColorPointCloud->points.push_back(colored_3d_point);
         }
     }
@@ -237,6 +248,10 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
     sensor_msgs::PointCloud2 out_colored_cloud_msg;
     pcl::toROSMsg(*outColorPointCloud, out_colored_cloud_msg);
     out_colored_cloud_msg.header = laserScan_msg->header;
+
+
+    
+
 
     //发布"colored_point_cloud" Topic
     fusion_cloud_pub_.publish(out_colored_cloud_msg);
@@ -313,6 +328,8 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
         //         //  }
         //      }
         //----------------------------------------------------------------------------------------------------------------
+
+        /*
 #ifdef H_LIDAR_INTERPOLATION
             float step = H_LIDAR_INTERPOLATION_IN_RADIAN;
             if( distance > 3.0f )
@@ -328,6 +345,8 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
             
             lastLeftRadian = radian;
 #endif
+
+        */
         }
        
 //         //右前方雷达数据,倒序存放为[360,330]
@@ -370,6 +389,8 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
         //      }
              //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------☝
             //水平插值
+
+            /*
 #ifdef H_LIDAR_INTERPOLATION
             float step = H_LIDAR_INTERPOLATION_IN_RADIAN;
             if( distance > 3.0f )
@@ -392,6 +413,9 @@ void EntryClass::transLaserScanToPointCloud(const sensor_msgs::LaserScan::ConstP
             
             lastRightRadian = radian;
 #endif
+*/
+
+
         }
     }
 
@@ -419,8 +443,8 @@ tf::StampedTransform EntryClass::findTransform(const std::string &target_frame, 
          tf::Quaternion rotation = transform.getRotation();
 
             // 打印平移和旋转信息
-            ROS_INFO("Translation: x=%f, y=%f, z=%f", translation.x(), translation.y(), translation.z());
-            ROS_INFO("Rotation: x=%f, y=%f, z=%f, w=%f", rotation.x(), rotation.y(), rotation.z(), rotation.w());
+            // ROS_INFO("Translation: x=%f, y=%f, z=%f", translation.x(), translation.y(), translation.z());
+            // ROS_INFO("Rotation: x=%f, y=%f, z=%f, w=%f", rotation.x(), rotation.y(), rotation.z(), rotation.w());
             //------------------------------------------------------------------------------☝
     }
     catch (tf::TransformException ex)
