@@ -29,7 +29,8 @@ EntryClass::EntryClass() :
     timer_ = nh_private.createTimer(ros::Duration(1.0 / max(freq, 1.0)), &EntryClass::mainLoop, this);
 
     fusion_cloud_pub_ = node_h.advertise<sensor_msgs::PointCloud2>("colored_point_cloud", 1);//融合点云
-     image_pub = node_h.advertise<sensor_msgs::Image>("camera/image", 1);//融合激光
+    
+     image_pub = node_h.advertise<sensor_msgs::Image>("camera/image", 1);//融合激光与视觉
     
     //订阅相机内参:
     // intrinsics_sub_ = node_h.subscribe("/camera/fisheye1/camera_info", 1, &EntryClass::intrinsicValueCallback, this);
@@ -229,7 +230,7 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
             
             // 在图像上绘制激光点的位置
             cv::circle(current_image_frame, cv::Point(col, row), 2, cv::Scalar(0, 255, 0), 1);
-            ROS_INFO("已完成当前点云绘制------------------------");
+            // ROS_INFO("已完成当前点云绘制------------------------");
         
 
              // 旋转图像
@@ -246,8 +247,13 @@ void EntryClass::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &laser
         }
     }
     // sensor_msgs::Image out_image;
+
+
+    //将cv::Mat 转换成sensor_msgs::Image类型
     sensor_msgs::ImagePtr out_image = cv_bridge::CvImage(header, "bgr8", current_image_frame).toImageMsg();
     //  ros::Publisher image_pub = node_h.advertise<sensor_msgs::Image>("image_with_laser", 1, true);
+
+    //将相机图像中带有激光点云的图像重新以新的话题发布出去
     image_pub.publish(out_image);
     
     sensor_msgs::PointCloud2 out_colored_cloud_msg;
